@@ -4,9 +4,20 @@
 
 package frc.robot;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.robots.PinkyContainer;
+
+import java.util.Map;
+
+import org.northernforce.util.NFRRobotChooser;
+import org.northernforce.util.NFRRobotContainer;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -15,7 +26,10 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
  * project.
  */
 public class Robot extends TimedRobot {
-
+  private NFRRobotContainer container;
+  private SendableChooser<Pose2d> poseChooser;
+  private SendableChooser<Command> autonomousChooser;
+  private Command autonomousCommand;
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
@@ -24,6 +38,7 @@ public class Robot extends TimedRobot {
   public void robotInit() {
     // Instantiate our RobotContainer.  This will perform all our button bindings, and put our
     // autonomous chooser on the dashboard.
+    container = new NFRRobotChooser(() -> new PinkyContainer(), Map.of("Pinky", () -> new PinkyContainer())).getNFRRobotContainer();
   }
 
   /**
@@ -40,6 +55,7 @@ public class Robot extends TimedRobot {
     // and running subsystem periodic() methods.  This must be called from the robot's periodic
     // block in order for anything in the Command-based framework to work.
     CommandScheduler.getInstance().run();
+    container.periodic();
   }
 
   /** This function is called once each time the robot enters Disabled mode. */
@@ -51,14 +67,44 @@ public class Robot extends TimedRobot {
 
   /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
   @Override
-  public void autonomousInit() {}
+  public void autonomousInit() {
+    autonomousCommand = autonomousChooser.getSelected();
+    var pose = poseChooser.getSelected();
+    if (pose != null)
+    {
+      container.setInitialPose(pose);
+    }
+    if (autonomousCommand != null)
+    {
+      autonomousCommand.schedule();
+    }
+  }
 
   /** This function is called periodically during autonomous. */
   @Override
-  public void autonomousPeriodic() {}
+  public void autonomousPeriodic() {
+    container.autonomousPeriodic();
+  }
 
   @Override
-  public void teleopInit() {}
+  public void teleopInit() {
+    if (autonomousCommand != null)
+    {
+      autonomousCommand.cancel();
+    }
+    CommandScheduler.getInstance().getActiveButtonLoop().clear();
+    GenericHID driverController;
+    if (DriverStation.getJoystickIsXbox(0))
+    {
+      driverController = new XboxController(0);
+    }
+    else
+    {
+      driverController = new GenericHID(0);
+    }
+    XboxController manipulatorController = new XboxController(1);
+    container.bindOI(driverController, manipulatorController);
+  }
 
   /** This function is called periodically during operator control. */
   @Override
