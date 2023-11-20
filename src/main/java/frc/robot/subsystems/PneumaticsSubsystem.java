@@ -13,29 +13,26 @@ public class PneumaticsSubsystem extends NFRSubsystem {
     public PneumaticsSubsystem(PneumaticsSubsystemConfiguration config) {
         super(config);
         this.config = config;
-        if (config.moduleType == PneumaticsModuleType.CTREPCM) {
-            compressor = new Compressor(0, PneumaticsModuleType.CTREPCM);
-        } else {
-            compressor = new Compressor(1, PneumaticsModuleType.REVPH);
-        }
-
+        compressor = new Compressor(config.id, config.moduleType);
     }
 
     public Solenoid getSolenoid(int channel) {
-        return new Solenoid(config.moduleType, channel);
+        return new Solenoid(config.id, config.moduleType, channel);
     }
 
     public static class PneumaticsSubsystemConfiguration extends NFRSubsystemConfiguration
     {
         PneumaticsModuleType moduleType;
+        int id;
         /**
          * Creates a new nfr drive config.
          * @param name a unique subsystem name.
          */
-        public PneumaticsSubsystemConfiguration(String name, PneumaticsModuleType type)
+        public PneumaticsSubsystemConfiguration(String name, PneumaticsModuleType type, int id)
         {
             super(name);
-            moduleType = type;
+            this.moduleType = type;
+            this.id = id;
         }
     }
 }
