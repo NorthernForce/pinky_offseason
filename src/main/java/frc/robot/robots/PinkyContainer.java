@@ -5,7 +5,9 @@ import java.util.Optional;
 
 import org.northernforce.commands.NFRRotatingArmJointWithJoystick;
 import org.northernforce.commands.NFRRunRollerIntake;
+import org.northernforce.commands.NFRTankDriveWithJoystick;
 import org.northernforce.encoders.NFRCANCoder;
+import org.northernforce.gyros.NFRNavX;
 import org.northernforce.motors.MotorEncoderMismatchException;
 import org.northernforce.motors.NFRSparkMax;
 import org.northernforce.motors.NFRTalonFX;
@@ -13,6 +15,8 @@ import org.northernforce.subsystems.arm.NFRRollerIntake;
 import org.northernforce.subsystems.arm.NFRRotatingArmJoint;
 import org.northernforce.subsystems.arm.NFRRollerIntake.NFRRollerIntakeConfiguration;
 import org.northernforce.subsystems.arm.NFRRotatingArmJoint.NFRRotatingArmJointConfiguration;
+import org.northernforce.subsystems.drive.NFRTankDrive;
+import org.northernforce.subsystems.drive.NFRTankDrive.NFRTankDriveConfiguration;
 import org.northernforce.util.NFRRobotContainer;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
@@ -25,6 +29,7 @@ import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.XboxController;
@@ -46,6 +51,7 @@ public class PinkyContainer implements NFRRobotContainer {
     NFRRotatingArmJoint wristJoint;
     PneumaticsSubsystem pneumatics;
     TelescopeSubsystem telescope;
+    private final NFRTankDrive drive;
     public PinkyContainer() {
         NFRRotatingArmJointConfiguration rotatingJointConfiguration = new NFRRotatingArmJointConfiguration("rotatingJoint")
             .withUseLimits(false)
@@ -113,10 +119,24 @@ public class PinkyContainer implements NFRRobotContainer {
             new PneumaticsSubsystem.PneumaticsSubsystemConfiguration("compressor", PneumaticsModuleType.REVPH, 20));
         this.telescope = new TelescopeSubsystem(
             new TelescopeSubsystem.TelescopeSubsystemConfiguration("telescope"), pneumatics.getSolenoid(8));
+        NFRTankDriveConfiguration driveConfig = new NFRTankDriveConfiguration("Tank Drive")
+            .withTrackWidth(Units.inchesToMeters(22))
+            .withGearRatio(11.37777778)
+            .withWheelRadius(Units.inchesToMeters(3))
+            .withMaxSpeed(1)
+            .withMass(Units.lbsToKilograms(120));
+        TalonFXConfiguration talonFXConfig = new TalonFXConfiguration();
+        NFRTalonFX leftSide = new NFRTalonFX(talonFXConfig, 1, 3);
+        NFRTalonFX rightSide = new NFRTalonFX(talonFXConfig, 2, 4);
+        talonFXConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+        leftSide.setInverted(true);
+        rightSide.setInverted(false);
+        drive = new NFRTankDrive(driveConfig, leftSide, rightSide, new NFRNavX());
     }
     
     @Override
     public void bindOI(GenericHID driverHID, GenericHID manipulatorHID) {
+        XboxController driverController = (XboxController)driverHID;
         XboxController manipulatorController = (XboxController)manipulatorHID;
         rotatingJoint.setDefaultCommand(new NFRRotatingArmJointWithJoystick(rotatingJoint,
             () -> -MathUtil.applyDeadband(manipulatorController.getLeftY(), 0.1, 1)));
@@ -128,6 +148,9 @@ public class PinkyContainer implements NFRRobotContainer {
             () -> -MathUtil.applyDeadband(manipulatorController.getRightY(), 0.1, 1)));
         new JoystickButton(manipulatorController, XboxController.Button.kRightBumper.value).onTrue(new Extend(telescope));
         new JoystickButton(manipulatorController, XboxController.Button.kLeftBumper.value).onTrue(new Retract(telescope));
+        drive.setDefaultCommand(new NFRTankDriveWithJoystick(drive,
+        () -> -MathUtil.applyDeadband(driverController.getLeftY(), 0.1),
+        () -> -MathUtil.applyDeadband(driverController.getRightX(), 0.1)));
     }
     @Override
     public Map<String, Command> getAutonomousOptions() {
