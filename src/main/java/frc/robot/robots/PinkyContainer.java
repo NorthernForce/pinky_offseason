@@ -5,9 +5,7 @@ import java.util.Optional;
 
 import org.northernforce.commands.NFRRotatingArmJointWithJoystick;
 import org.northernforce.commands.NFRRunRollerIntake;
-import org.northernforce.encoders.NFRAbsoluteEncoder;
 import org.northernforce.encoders.NFRCANCoder;
-import org.northernforce.encoders.NFREncoder;
 import org.northernforce.motors.MotorEncoderMismatchException;
 import org.northernforce.motors.NFRSparkMax;
 import org.northernforce.motors.NFRTalonFX;
@@ -28,18 +26,26 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.wpilibj.GenericHID;
+import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import frc.robot.commands.Extend;
+import frc.robot.commands.Retract;
+import frc.robot.subsystems.PneumaticsSubsystem;
+import frc.robot.subsystems.TelescopeSubsystem;
 
 
 public class PinkyContainer implements NFRRobotContainer {
     NFRRotatingArmJoint rotatingJoint;
     private NFRRollerIntake intake;
     NFRRotatingArmJoint wristJoint;
+    PneumaticsSubsystem pneumatics;
+    TelescopeSubsystem telescope;
     public PinkyContainer() {
         NFRRotatingArmJointConfiguration rotatingJointConfiguration = new NFRRotatingArmJointConfiguration("rotatingJoint")
             .withUseLimits(false)
@@ -80,7 +86,6 @@ public class PinkyContainer implements NFRRobotContainer {
             Commands.runOnce(
                 () -> rotatingJointCANCoder.setAbsoluteOffset(rotatingJointCANCoder.getAbsoluteOffset()
                     - rotatingJointCANCoder.getPosition())));
-        
         NFRRotatingArmJointConfiguration wristJointConfiguration = new NFRRotatingArmJointConfiguration("wristJoint")
             .withUseLimits(false)
             .withUseIntegratedLimits(true)
@@ -97,13 +102,17 @@ public class PinkyContainer implements NFRRobotContainer {
         {
             e.printStackTrace();
         }
-        wristqJoint = new NFRRotatingArmJoint(wristJointConfiguration, wristJointMotor, Optional.empty());
+        wristJoint = new NFRRotatingArmJoint(wristJointConfiguration, wristJointMotor, Optional.empty());
         Shuffleboard.getTab("General").addDouble("Wrist Angle", () -> wristJoint.getRotation().getDegrees());
         Shuffleboard.getTab("General").add("Reset Encoder",
             Commands.runOnce(
                 () -> wristJointMotor.getAbsoluteEncoder().get().setAbsoluteOffset(wristJointMotor.getAbsoluteEncoder().get().getAbsoluteOffset()
                     - wristJointMotor.getAbsoluteEncoder().get().getPosition())));
         
+        this.pneumatics = new PneumaticsSubsystem(
+            new PneumaticsSubsystem.PneumaticsSubsystemConfiguration("compressor", PneumaticsModuleType.REVPH, 20));
+        this.telescope = new TelescopeSubsystem(
+            new TelescopeSubsystem.TelescopeSubsystemConfiguration("telescope"), pneumatics.getSolenoid(8));
     }
     
     @Override
@@ -117,6 +126,8 @@ public class PinkyContainer implements NFRRobotContainer {
             .whileTrue(new NFRRunRollerIntake(intake, -1,true));
         wristJoint.setDefaultCommand(new NFRRotatingArmJointWithJoystick(wristJoint,
             () -> -MathUtil.applyDeadband(manipulatorController.getRightY(), 0.1, 1)));
+        new JoystickButton(manipulatorController, XboxController.Button.kRightBumper.value).onTrue(new Extend(telescope));
+        new JoystickButton(manipulatorController, XboxController.Button.kLeftBumper.value).onTrue(new Retract(telescope));
     }
     @Override
     public Map<String, Command> getAutonomousOptions() {
