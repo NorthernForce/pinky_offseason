@@ -4,13 +4,16 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.northernforce.commands.NFRRotatingArmJointWithJoystick;
+import org.northernforce.commands.NFRRunRollerIntake;
 import org.northernforce.encoders.NFRAbsoluteEncoder;
 import org.northernforce.encoders.NFRCANCoder;
 import org.northernforce.encoders.NFREncoder;
 import org.northernforce.motors.MotorEncoderMismatchException;
 import org.northernforce.motors.NFRSparkMax;
 import org.northernforce.motors.NFRTalonFX;
+import org.northernforce.subsystems.arm.NFRRollerIntake;
 import org.northernforce.subsystems.arm.NFRRotatingArmJoint;
+import org.northernforce.subsystems.arm.NFRRollerIntake.NFRRollerIntakeConfiguration;
 import org.northernforce.subsystems.arm.NFRRotatingArmJoint.NFRRotatingArmJointConfiguration;
 import org.northernforce.util.NFRRobotContainer;
 
@@ -30,10 +33,12 @@ import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 
 
 public class PinkyContainer implements NFRRobotContainer {
     NFRRotatingArmJoint rotatingJoint;
+    private NFRRollerIntake intake;
     NFRRotatingArmJoint wristJoint;
     public PinkyContainer() {
         NFRRotatingArmJointConfiguration rotatingJointConfiguration = new NFRRotatingArmJointConfiguration("rotatingJoint")
@@ -58,6 +63,9 @@ public class PinkyContainer implements NFRRobotContainer {
         NFRCANCoder rotatingJointCANCoder = new NFRCANCoder(13);
         rotatingJointCANCoder.setRange(true);
         rotatingJointCANCoder.setInverted(true);
+        NFRRollerIntakeConfiguration intakeConfig = new NFRRollerIntakeConfiguration("intake",-1); 
+        intake = new NFRRollerIntake(intakeConfig, new NFRSparkMax(MotorType.kBrushless, 9));
+
         try
         {
             rotatingJointMotor.setSelectedEncoder(rotatingJointCANCoder);
@@ -103,6 +111,10 @@ public class PinkyContainer implements NFRRobotContainer {
         XboxController manipulatorController = (XboxController)manipulatorHID;
         rotatingJoint.setDefaultCommand(new NFRRotatingArmJointWithJoystick(rotatingJoint,
             () -> -MathUtil.applyDeadband(manipulatorController.getLeftY(), 0.1, 1)));
+        new Trigger(() -> manipulatorController.getLeftTriggerAxis() > 0.2)
+            .whileTrue(new NFRRunRollerIntake(intake, 1,true));
+        new Trigger(() -> manipulatorController.getRightTriggerAxis() > 0.2)
+            .whileTrue(new NFRRunRollerIntake(intake, -1,true));
         wristJoint.setDefaultCommand(new NFRRotatingArmJointWithJoystick(wristJoint,
             () -> -MathUtil.applyDeadband(manipulatorController.getRightY(), 0.1, 1)));
     }
