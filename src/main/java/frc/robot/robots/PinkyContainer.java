@@ -5,7 +5,9 @@ import java.util.Optional;
 
 import org.northernforce.commands.NFRRotatingArmJointWithJoystick;
 import org.northernforce.commands.NFRRunRollerIntake;
+import org.northernforce.encoders.NFRAbsoluteEncoder;
 import org.northernforce.encoders.NFRCANCoder;
+import org.northernforce.encoders.NFREncoder;
 import org.northernforce.motors.MotorEncoderMismatchException;
 import org.northernforce.motors.NFRSparkMax;
 import org.northernforce.motors.NFRTalonFX;
@@ -37,6 +39,7 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 public class PinkyContainer implements NFRRobotContainer {
     NFRRotatingArmJoint rotatingJoint;
     private NFRRollerIntake intake;
+    NFRRotatingArmJoint wristJoint;
     public PinkyContainer() {
         NFRRotatingArmJointConfiguration rotatingJointConfiguration = new NFRRotatingArmJointConfiguration("rotatingJoint")
             .withUseLimits(false)
@@ -77,8 +80,32 @@ public class PinkyContainer implements NFRRobotContainer {
             Commands.runOnce(
                 () -> rotatingJointCANCoder.setAbsoluteOffset(rotatingJointCANCoder.getAbsoluteOffset()
                     - rotatingJointCANCoder.getPosition())));
+        
+        NFRRotatingArmJointConfiguration wristJointConfiguration = new NFRRotatingArmJointConfiguration("wristJoint")
+            .withUseLimits(false)
+            .withUseIntegratedLimits(true)
+            .withLimits(Rotation2d.fromDegrees(-95), Rotation2d.fromDegrees(71)); // TODO
+        NFRSparkMax wristJointMotor = new NFRSparkMax(MotorType.kBrushed, 10);
+        wristJointMotor.getPIDController().setP(0.0); // TODO
+        wristJointMotor.getPIDController().setI(0.0); // TODO
+        wristJointMotor.setInverted(false); // TODO
+        try
+        {
+            wristJointMotor.setSelectedEncoder(wristJointMotor.getAbsoluteEncoder().get());
+        }
+        catch (MotorEncoderMismatchException e)
+        {
+            e.printStackTrace();
+        }
+        wristqJoint = new NFRRotatingArmJoint(wristJointConfiguration, wristJointMotor, Optional.empty());
+        Shuffleboard.getTab("General").addDouble("Wrist Angle", () -> wristJoint.getRotation().getDegrees());
+        Shuffleboard.getTab("General").add("Reset Encoder",
+            Commands.runOnce(
+                () -> wristJointMotor.getAbsoluteEncoder().get().setAbsoluteOffset(wristJointMotor.getAbsoluteEncoder().get().getAbsoluteOffset()
+                    - wristJointMotor.getAbsoluteEncoder().get().getPosition())));
+        
     }
-
+    
     @Override
     public void bindOI(GenericHID driverHID, GenericHID manipulatorHID) {
         XboxController manipulatorController = (XboxController)manipulatorHID;
@@ -88,8 +115,9 @@ public class PinkyContainer implements NFRRobotContainer {
             .whileTrue(new NFRRunRollerIntake(intake, 1,true));
         new Trigger(() -> manipulatorController.getRightTriggerAxis() > 0.2)
             .whileTrue(new NFRRunRollerIntake(intake, -1,true));
+        wristJoint.setDefaultCommand(new NFRRotatingArmJointWithJoystick(wristJoint,
+            () -> -MathUtil.applyDeadband(manipulatorController.getRightY(), 0.1, 1)));
     }
-
     @Override
     public Map<String, Command> getAutonomousOptions() {
         // TODO
