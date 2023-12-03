@@ -77,6 +77,10 @@ public class Robot extends TimedRobot {
     if (m_autonomousCommand != null) {
       m_autonomousCommand.cancel();
     }
+    CommandScheduler.getInstance().getActiveButtonLoop().clear();
+    GenericHID driverController = new XboxController(0);
+    XboxController manipulatorController = new XboxController(1);
+    container.bindOI(driverController, manipulatorController);
   }
 
   /** This function is called periodically during operator control. */
