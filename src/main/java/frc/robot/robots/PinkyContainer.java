@@ -3,11 +3,10 @@ package frc.robot.robots;
 import java.util.Map;
 import java.util.Optional;
 
+import org.northernforce.commands.NFRRotatingArmJointSetAngle;
 import org.northernforce.commands.NFRRotatingArmJointWithJoystick;
 import org.northernforce.commands.NFRRunRollerIntake;
-import org.northernforce.encoders.NFRAbsoluteEncoder;
 import org.northernforce.encoders.NFRCANCoder;
-import org.northernforce.encoders.NFREncoder;
 import org.northernforce.motors.MotorEncoderMismatchException;
 import org.northernforce.motors.NFRSparkMax;
 import org.northernforce.motors.NFRTalonFX;
@@ -33,6 +32,7 @@ import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 
 
@@ -47,17 +47,15 @@ public class PinkyContainer implements NFRRobotContainer {
             .withGearbox(DCMotor.getFalcon500(2))
             .withLimits(Rotation2d.fromDegrees(-95), Rotation2d.fromDegrees(71)); // TODO
         TalonFXConfiguration rotatingJointMotorConfiguration = new TalonFXConfiguration();
-        rotatingJointMotorConfiguration.MotionMagic.MotionMagicAcceleration = 0; // TODO
-        rotatingJointMotorConfiguration.MotionMagic.MotionMagicCruiseVelocity = 0; // TODO
-        rotatingJointMotorConfiguration.Slot0.kP = 0; // TODO
+        rotatingJointMotorConfiguration.Slot0.kP = 10; // TODO
         rotatingJointMotorConfiguration.Slot0.kI = 0; // TODO
         rotatingJointMotorConfiguration.Slot0.kD = 0; // TODO
         rotatingJointMotorConfiguration.Slot0.kV = 0; // TODO
         rotatingJointMotorConfiguration.Slot0.kS = 0; // TODO
         rotatingJointMotorConfiguration.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         rotatingJointMotorConfiguration.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-        rotatingJointMotorConfiguration.MotionMagic.MotionMagicCruiseVelocity = 0;
-        rotatingJointMotorConfiguration.MotionMagic.MotionMagicAcceleration = 0;
+        rotatingJointMotorConfiguration.MotionMagic.MotionMagicCruiseVelocity = 1.5;
+        rotatingJointMotorConfiguration.MotionMagic.MotionMagicAcceleration = 1;
         NFRTalonFX rotatingJointMotor = new NFRTalonFX(rotatingJointMotorConfiguration, 5,6);
         rotatingJointMotor.setFollowerOppose(0);
         NFRCANCoder rotatingJointCANCoder = new NFRCANCoder(13);
@@ -97,7 +95,7 @@ public class PinkyContainer implements NFRRobotContainer {
         {
             e.printStackTrace();
         }
-        wristqJoint = new NFRRotatingArmJoint(wristJointConfiguration, wristJointMotor, Optional.empty());
+        wristJoint = new NFRRotatingArmJoint(wristJointConfiguration, wristJointMotor, Optional.empty());
         Shuffleboard.getTab("General").addDouble("Wrist Angle", () -> wristJoint.getRotation().getDegrees());
         Shuffleboard.getTab("General").add("Reset Encoder",
             Commands.runOnce(
@@ -117,6 +115,7 @@ public class PinkyContainer implements NFRRobotContainer {
             .whileTrue(new NFRRunRollerIntake(intake, -1,true));
         wristJoint.setDefaultCommand(new NFRRotatingArmJointWithJoystick(wristJoint,
             () -> -MathUtil.applyDeadband(manipulatorController.getRightY(), 0.1, 1)));
+        new JoystickButton(manipulatorController, XboxController.Button.kA.value).onTrue(new NFRRotatingArmJointSetAngle(rotatingJoint, Rotation2d.fromRotations(-0.25), Rotation2d.fromDegrees(5),0,true));
     }
     @Override
     public Map<String, Command> getAutonomousOptions() {
