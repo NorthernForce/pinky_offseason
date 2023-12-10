@@ -115,7 +115,6 @@ public class PinkyContainer implements NFRRobotContainer {
             .whileTrue(new NFRRunRollerIntake(intake, -1,true));
         wristJoint.setDefaultCommand(new NFRRotatingArmJointWithJoystick(wristJoint,
             () -> -MathUtil.applyDeadband(manipulatorController.getRightY(), 0.1, 1)));
-        new JoystickButton(manipulatorController, XboxController.Button.kA.value).onTrue(new NFRRotatingArmJointSetAngle(rotatingJoint, Rotation2d.fromRotations(-0.25), Rotation2d.fromDegrees(5),0,true));
     }
     @Override
     public Map<String, Command> getAutonomousOptions() {
