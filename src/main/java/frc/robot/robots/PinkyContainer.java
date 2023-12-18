@@ -3,6 +3,7 @@ package frc.robot.robots;
 import java.util.Map;
 import java.util.Optional;
 
+import org.northernforce.commands.NFRRotatingArmJointSetAngle;
 import org.northernforce.commands.NFRRotatingArmJointWithJoystick;
 import org.northernforce.commands.NFRRunRollerIntake;
 import org.northernforce.commands.NFRTankDriveWithJoystick;
@@ -97,7 +98,7 @@ public class PinkyContainer implements NFRRobotContainer {
             .withUseIntegratedLimits(true)
             .withLimits(Rotation2d.fromDegrees(-95), Rotation2d.fromDegrees(71)); // TODO
         NFRSparkMax wristJointMotor = new NFRSparkMax(MotorType.kBrushed, 10);
-        wristJointMotor.getPIDController().setP(0.0); // TODO
+        wristJointMotor.getPIDController().setP(2); // TODO
         wristJointMotor.getPIDController().setI(0.0); // TODO
         wristJointMotor.setInverted(false); // TODO
         try
@@ -148,6 +149,8 @@ public class PinkyContainer implements NFRRobotContainer {
             () -> -MathUtil.applyDeadband(manipulatorController.getRightY(), 0.1, 1)));
         new JoystickButton(manipulatorController, XboxController.Button.kRightBumper.value).onTrue(new Extend(telescope));
         new JoystickButton(manipulatorController, XboxController.Button.kLeftBumper.value).onTrue(new Retract(telescope));
+        new JoystickButton(manipulatorController, XboxController.Button.kB.value).onTrue(new NFRRotatingArmJointSetAngle(wristJoint, Rotation2d.fromRotations(0.25), Rotation2d.fromDegrees(5),0,false));
+
         drive.setDefaultCommand(new NFRTankDriveWithJoystick(drive,
         () -> -MathUtil.applyDeadband(driverController.getLeftY(), 0.1),
         () -> -MathUtil.applyDeadband(driverController.getRightX(), 0.1)));
