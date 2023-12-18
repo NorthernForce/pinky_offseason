@@ -94,14 +94,7 @@ public class Robot extends TimedRobot {
     }
     CommandScheduler.getInstance().getActiveButtonLoop().clear();
     GenericHID driverController;
-    if (DriverStation.getJoystickIsXbox(0))
-    {
-      driverController = new XboxController(0);
-    }
-    else
-    {
-      driverController = new GenericHID(0);
-    }
+    driverController = new XboxController(0);
     XboxController manipulatorController = new XboxController(1);
     container.bindOI(driverController, manipulatorController);
   }
