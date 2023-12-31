@@ -95,7 +95,7 @@ public class PinkyContainer implements NFRRobotContainer {
                     - rotatingJointCANCoder.getPosition())));
         NFRRotatingArmJointConfiguration wristJointConfiguration = new NFRRotatingArmJointConfiguration("wristJoint")
             .withUseLimits(false)
-            .withUseIntegratedLimits(true)
+            .withUseIntegratedLimits(false)
             .withLimits(Rotation2d.fromDegrees(-95), Rotation2d.fromDegrees(71)); // TODO
         NFRSparkMax wristJointMotor = new NFRSparkMax(MotorType.kBrushed, 10);
         wristJointMotor.getPIDController().setP(0.0); // TODO
