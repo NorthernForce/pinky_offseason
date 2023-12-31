@@ -12,10 +12,9 @@ import org.northernforce.motors.MotorEncoderMismatchException;
 import org.northernforce.motors.NFRSparkMax;
 import org.northernforce.motors.NFRTalonFX;
 import org.northernforce.subsystems.arm.NFRRollerIntake;
-import org.northernforce.subsystems.arm.NFRRotatingArmJoint;
 import org.northernforce.subsystems.arm.NFRRollerIntake.NFRRollerIntakeConfiguration;
+import org.northernforce.subsystems.arm.NFRRotatingArmJoint;
 import org.northernforce.subsystems.arm.NFRRotatingArmJoint.NFRRotatingArmJointConfiguration;
-import org.northernforce.subsystems.drive.NFRTankDrive;
 import org.northernforce.subsystems.drive.NFRTankDrive.NFRTankDriveConfiguration;
 import org.northernforce.util.NFRRobotContainer;
 
@@ -37,10 +36,12 @@ import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.commands.DriveDistance;
 import frc.robot.commands.Extend;
 import frc.robot.commands.Retract;
+import frc.robot.subsystems.Drive;
 import frc.robot.subsystems.PneumaticsSubsystem;
 import frc.robot.subsystems.TelescopeSubsystem;
 
@@ -51,7 +52,7 @@ public class PinkyContainer implements NFRRobotContainer {
     NFRRotatingArmJoint wristJoint;
     PneumaticsSubsystem pneumatics;
     TelescopeSubsystem telescope;
-    private final NFRTankDrive drive;
+    private final Drive drive;
     public PinkyContainer() {
         NFRRotatingArmJointConfiguration rotatingJointConfiguration = new NFRRotatingArmJointConfiguration("rotatingJoint")
             .withUseLimits(false)
@@ -131,7 +132,7 @@ public class PinkyContainer implements NFRRobotContainer {
         talonFXConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         leftSide.setInverted(true);
         rightSide.setInverted(false);
-        drive = new NFRTankDrive(driveConfig, leftSide, rightSide, new NFRNavX());
+        drive = new Drive(driveConfig, leftSide, rightSide, new NFRNavX());
     }
     
     @Override
@@ -151,6 +152,7 @@ public class PinkyContainer implements NFRRobotContainer {
         drive.setDefaultCommand(new NFRTankDriveWithJoystick(drive,
         () -> -MathUtil.applyDeadband(driverController.getLeftY(), 0.1),
         () -> -MathUtil.applyDeadband(driverController.getRightX(), 0.1)));
+        new JoystickButton(driverController, XboxController.Button.kA.value).whileTrue(new DriveDistance(drive, 2, 0.5));
     }
     @Override
     public Map<String, Command> getAutonomousOptions() {
