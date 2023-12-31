@@ -100,6 +100,8 @@ public class PinkyContainer implements NFRRobotContainer {
         wristJointMotor.getPIDController().setP(0.0); // TODO
         wristJointMotor.getPIDController().setI(0.0); // TODO
         wristJointMotor.setInverted(false); // TODO
+        wristJointMotor.disableNegativeLimit();
+        wristJointMotor.disablePositiveLimit();
         try
         {
             wristJointMotor.setSelectedEncoder(wristJointMotor.getAbsoluteEncoder().get());
